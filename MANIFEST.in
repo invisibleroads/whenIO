@@ -1,2 +1,3 @@
 recursive-include whenIO *
 include *.rst
+global-exclude *.pyc
