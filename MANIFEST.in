@@ -1,2 +1,3 @@
-recursive-include *.py *.rst tests
+recursive-include whenIO *
+include *.rst
 global-exclude *.pyc

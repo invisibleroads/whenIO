@@ -1,12 +1,12 @@
 'Setup script for whenIO'
 import os
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README')).read()
-CHANGES = open(os.path.join(here, 'CHANGES')).read()
+README = open(os.path.join(here, 'README.rst')).read()
+CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 
 
 setup(
@@ -24,7 +24,8 @@ setup(
     author='Roy Hyunjin Han',
     author_email='service@invisibleroads.com',
     url='https://github.com/invisibleroads/whenIO',
-    packages=['whenIO'],
+    packages=find_packages(),
+    include_package_data=True,
     test_suite='whenIO.tests',
     tests_require=['nose'],
     zip_safe=True)
