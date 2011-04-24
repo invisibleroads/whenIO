@@ -1,2 +1,2 @@
-recursive-include tests *.py *.rst
+recursive-include *.py *.rst tests
 global-exclude *.pyc
