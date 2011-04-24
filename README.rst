@@ -22,7 +22,13 @@ Usage
     'Today 5:15pm'
     >>> w.format(datetime.datetime.utcnow(), fromUTC=True)
     'Today 1:15pm'
+    >>> w.format(datetime.datetime.utcnow(), dateTemplate_=' %m/%d/%Y', fromUTC=True)
+    'Today 04/24/2011 1:15pm'
+    >>> w.format([datetime.datetime(2000, 1, 1, 0, 0), datetime.datetime(2000, 1, 1, 1, 0)], fromUTC=False)
+    '01/01/2000 12am 1am'
 
+    >>> w.parse('10am', toUTC=False)
+    ([datetime.datetime(2011, 4, 24, 10, 0)], [])
     >>> w.parse('today 10am', toUTC=False)
     ([datetime.datetime(2011, 4, 24, 10, 0)], [])
     >>> w.parse('today 10am', toUTC=True)
