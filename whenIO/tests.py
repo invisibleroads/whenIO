@@ -5,7 +5,6 @@ import unittest
 import whenIO
 
 
-# Setup
 minutesOffset = 240
 localToday = datetime.datetime(2009, 5, 1)
 specialPacks = [
@@ -22,7 +21,7 @@ specialPacks = [
 ]
 
 
-class TestWhenIO(unittest.TestCase):
+class Test(unittest.TestCase):
 
     def setUp(self):
         self.whenIO = whenIO.WhenIO(minutesOffset=minutesOffset, localToday=localToday)
