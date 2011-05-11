@@ -1,4 +1,4 @@
-WhenIO
+whenIO
 ======
 Here are some methods for formatting and parsing friendly timestamps.
 
