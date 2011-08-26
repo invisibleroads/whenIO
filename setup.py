@@ -26,6 +26,7 @@ setup(
     url='https://github.com/invisibleroads/whenIO',
     packages=find_packages(),
     include_package_data=True,
+    install_requires=['python-dateutil==1.5'],
     test_suite='whenIO.tests',
     tests_require=['nose'],
     zip_safe=True)

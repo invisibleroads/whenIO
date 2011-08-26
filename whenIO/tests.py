@@ -106,3 +106,9 @@ class Test(unittest.TestCase):
         self.assertEqual(whenIO.parse_offset('-0400 UTC')[0], +240)
         self.assertEqual(whenIO.parse_offset('-0430 UTC')[0], +270)
         self.assertEqual(whenIO.parse_offset('-0600 UTC')[0], +360)
+
+    def test_interval(self):
+        self.assertEqual('7 days', whenIO.format_interval(whenIO.parse_interval('1 week 1 second')))
+        self.assertEqual('2 years', whenIO.format_interval(whenIO.parse_interval('1 year 8 months'), precision=1))
+        self.assertEqual('3 months 10 days', whenIO.format_interval(whenIO.parse_interval('3 months 9 days 23 hours'), precision=2))
+        self.assertEqual('8 days 8 hours', whenIO.format_interval(whenIO.parse_interval('200 hours')))

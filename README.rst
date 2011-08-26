@@ -16,7 +16,7 @@ Usage
 
     >>> import whenIO
     >>> import datetime
-    >>> w = whenIO.WhenIO(minutesOffset=240)
+    >>> w = whenIO.WhenIO(offsetMinutes=240)
 
     >>> w.format(datetime.datetime.utcnow(), fromUTC=False)
     'Today 5:15pm'
@@ -35,7 +35,7 @@ Usage
     ([datetime.datetime(2011, 4, 24, 14, 0)], [])
     >>> w.parse('tom 8pm', toUTC=True)
     ([datetime.datetime(2011, 4, 26, 0, 0)], [])
-    >>> w.parse('Monday 8:10pm tag1 tag2', toUTC=True)
+    >>> w.parse('monday 8:10pm tag1 tag2', toUTC=True)
     ([datetime.datetime(2011, 4, 26, 0, 10)], ['tag1', 'tag2'])
 
     >>> w.format_offset()
@@ -44,3 +44,11 @@ Usage
     '+0900 UTC'
     >>> whenIO.parse_offset('-0400 UTC')
     (240, '')
+
+    >>> rdelta = whenIO.parse_interval('2 years 7 months 1 second')
+    >>> whenIO.format_interval(rdelta, precision=1)
+    '3 years'
+    >>> whenIO.format_interval(rdelta, precision=2)
+    '2 years 7 months'
+    >>> whenIO.format_interval(rdelta, precision=3)
+    '2 years 7 months'

@@ -1,6 +1,6 @@
 'Methods for formatting and parsing friendly timestamps'
-import datetime
 import re
+import datetime
 
 
 indexByWeekday = {
@@ -248,3 +248,51 @@ def parse_offset(text):
     else:
         offsetMinutes = None
     return offsetMinutes, text
+
+
+def format_interval(rdelta, precision=2):
+    'Format a relativedelta object rounded to the given precision'
+    units = ['years', 'months', 'days', 'hours', 'minutes', 'seconds']
+    maxes = [12, 30, 24, 60, 60, 1000000]
+    packs = []
+    precisionIndex = 0
+    for unit in units:
+        value = getattr(rdelta, unit)
+        # If we have an empty value,
+        if not value:
+            # If we have skipped a unit, break
+            if packs:
+                break
+            # If we have no terms yet, continue
+            continue
+        packs.append([value, unit])
+        precisionIndex += 1
+        # If we are at the requested precision,
+        if precisionIndex >= precision:
+            unitIndex = units.index(unit)
+            if unitIndex < len(units):
+                # Look at value of the next unit and round up if necessary
+                valueNext = getattr(rdelta, units[unitIndex + 1])
+                if valueNext > maxes[unitIndex] / 2:
+                    packs[-1][0] += 1
+            break
+    # Format terms with appropriate plurality
+    return ' '.join('%i %s' % (value, unit if abs(value) != 1 else unit[:-1]) for value, unit in packs)
+
+
+def parse_interval(text):
+    'Parse a relativedelta object from a string'
+    from dateutil.relativedelta import relativedelta
+    units = ['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds']
+    terms = text.split()
+    valueByUnit = {}
+    for termIndex, term in enumerate(terms[1:], 1):
+        if not term.endswith('s'):
+            term += 's'
+        if term in units:
+            try:
+                value = float(terms[termIndex - 1])
+            except ValueError:
+                continue
+            valueByUnit[term] = value
+    return relativedelta(**valueByUnit)
