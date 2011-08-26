@@ -5,7 +5,7 @@ import unittest
 import whenIO
 
 
-minutesOffset = 240
+offsetMinutes = 240
 localToday = datetime.datetime(2009, 5, 1)
 specialPacks = [
     ('tod', 'today',     datetime.datetime(2009, 5, 1)),
@@ -24,7 +24,7 @@ specialPacks = [
 class Test(unittest.TestCase):
 
     def setUp(self):
-        self.whenIO = whenIO.WhenIO(minutesOffset=minutesOffset, localToday=localToday)
+        self.whenIO = whenIO.WhenIO(offsetMinutes=offsetMinutes, localToday=localToday)
 
     def test_format(self):
         'Test that formatting works properly'
@@ -32,7 +32,7 @@ class Test(unittest.TestCase):
             self.assertEqual(self.whenIO.format(whens, fromUTC=False, **kw), whensString)
             if not hasattr(whens, '__iter__'):
                 whens = [whens]
-            self.assertEqual(self.whenIO.format([x + datetime.timedelta(minutes=minutesOffset) for x in whens], fromUTC=True, **kw), whensString)
+            self.assertEqual(self.whenIO.format([x + datetime.timedelta(minutes=offsetMinutes) for x in whens], fromUTC=True, **kw), whensString)
         # Test regular dates
         assertFormat(datetime.datetime(2009, 1, 1),         '01/01/2009 12am')
         assertFormat(datetime.datetime(2009, 1, 1, 3),      '01/01/2009 3am')
@@ -64,7 +64,7 @@ class Test(unittest.TestCase):
             if not hasattr(whens, '__iter__'):
                 whens = [whens]
             self.assertEqual(self.whenIO.parse(whensString, toUTC=False)[0], whens)
-            self.assertEqual(self.whenIO.parse(whensString, toUTC=True)[0], [x + datetime.timedelta(minutes=minutesOffset) for x in whens])
+            self.assertEqual(self.whenIO.parse(whensString, toUTC=True)[0], [x + datetime.timedelta(minutes=offsetMinutes) for x in whens])
         # Test regular dates
         assertParse('12am',             datetime.datetime(2009, 5, 1, 0, 0))
         assertParse('12am text',             datetime.datetime(2009, 5, 1, 0, 0))

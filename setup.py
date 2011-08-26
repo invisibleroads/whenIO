@@ -11,7 +11,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 
 setup(
     name='whenIO',
-    version='1.0',
+    version='1.1',
     description='Methods for formatting and parsing friendly timestamps',
     long_description=README + '\n\n' +  CHANGES,
     license='MIT',

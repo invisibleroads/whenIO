@@ -22,14 +22,14 @@ class WhenIO(object):
     
     # Constructor
 
-    def __init__(self, minutesOffset=0, localToday=None):
+    def __init__(self, offsetMinutes=0, localToday=None):
         """
         Set user-specific parameters.
-        minutesOffset  Set offset as returned by Javascript's Date.getTimezoneOffset()
+        offsetMinutes  Set offset as returned by Javascript's Date.getTimezoneOffset()
         localToday     Set reference date to parse special terms like "Today"
         """
         # Set
-        self.minutesOffset = minutesOffset
+        self.offsetMinutes = offsetMinutes
         self.localToday = localToday.date() if localToday else self.to_local(datetime.datetime.utcnow()).date()
         self.localTomorrow = self.localToday + datetime.timedelta(days=1)
         self.localYesterday = self.localToday + datetime.timedelta(days=-1)
@@ -114,7 +114,7 @@ class WhenIO(object):
 
     def format_offset(self):
         'Format timezone offset'
-        return format_offset(self.minutesOffset)
+        return format_offset(self.offsetMinutes)
 
     # Parse
 
@@ -220,17 +220,17 @@ class WhenIO(object):
     def from_local(self, when):
         'Convert whenLocal into UTC'
         if when:
-            return when + datetime.timedelta(minutes=self.minutesOffset)
+            return when + datetime.timedelta(minutes=self.offsetMinutes)
 
     def to_local(self, when):
         'Convert UTC into whenLocal'
         if when: 
-            return when - datetime.timedelta(minutes=self.minutesOffset)
+            return when - datetime.timedelta(minutes=self.offsetMinutes)
 
 
-def format_offset(minutesOffset):
+def format_offset(offsetMinutes):
     'Format timezone offset'
-    hourCount = minutesOffset / 60.
+    hourCount = offsetMinutes / 60.
     hourQuotient = int(hourCount)
     hourRemainder = abs(hourCount - hourQuotient)
     return '%+03d%02d UTC' % (-1 * hourCount, hourRemainder * 60)
@@ -238,13 +238,13 @@ def format_offset(minutesOffset):
 
 def parse_offset(text):
     'Parse timezone offset'
-    matchOffset = pattern_offset.search(text)
-    if matchOffset:
-        x, y = matchOffset.groups()
+    match = pattern_offset.search(text)
+    if match:
+        x, y = match.groups()
         x = int(x)
         y = int(y)
-        minutesOffset = (1 if x < 0 else -1) * (abs(x) * 60 + y)
+        offsetMinutes = (1 if x < 0 else -1) * (abs(x) * 60 + y)
         text = pattern_offset.sub('', text)
     else:
-        minutesOffset = None
-    return minutesOffset, text
+        offsetMinutes = None
+    return offsetMinutes, text
