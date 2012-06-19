@@ -55,8 +55,8 @@ class Test(unittest.TestCase):
         # Test custom templates
         assertFormat(datetime.datetime(2009, 1, 1), 'Thursday 20090101 12am', dateTemplate='%A %Y%m%d')
         assertFormat(datetime.datetime(2009, 5, 1), 'Today 20090501 12am', dateTemplate_=' %Y%m%d')
-        # Test other input
-        assertFormat([], '')
+        # Test edge cases
+        self.whenIO.format([None])
 
     def test_parse(self):
         'Test that parsing works properly'
@@ -112,3 +112,5 @@ class Test(unittest.TestCase):
         self.assertEqual('2 years', whenIO.format_interval(whenIO.parse_interval('1 year 8 months'), precision=1))
         self.assertEqual('3 months 10 days', whenIO.format_interval(whenIO.parse_interval('3 months 9 days 23 hours'), precision=2))
         self.assertEqual('8 days 8 hours', whenIO.format_interval(whenIO.parse_interval('200 hours')))
+        # Test edge cases
+        whenIO.parse_interval('xxx hours')

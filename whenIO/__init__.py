@@ -135,7 +135,7 @@ class WhenIO(object):
             if date != None: 
                 if date not in whens:
                     whens.append(date)
-                continue
+                continue # pragma: no cover
             # Try to parse the term as a time
             time = self.parse_time(term)
             # If the term is a time,
@@ -264,7 +264,7 @@ def format_interval(rdelta, precision=2):
             if packs:
                 break
             # If we have no terms yet, continue
-            continue
+            continue # pragma: no cover
         packs.append([value, unit])
         precisionIndex += 1
         # If we are at the requested precision,
