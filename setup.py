@@ -11,7 +11,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 
 setup(
     name='whenIO',
-    version='1.1',
+    version='1.2',
     description='Methods for formatting and parsing friendly timestamps',
     long_description=README + '\n\n' +  CHANGES,
     license='MIT',
@@ -22,7 +22,7 @@ setup(
     ],
     keywords='datetime time',
     author='Roy Hyunjin Han',
-    author_email='service@invisibleroads.com',
+    author_email='starsareblueandfaraway@gmail.com',
     url='https://github.com/invisibleroads/whenIO',
     packages=find_packages(),
     include_package_data=True,
