@@ -1,9 +1,15 @@
 'Methods for formatting and parsing friendly timestamps'
-import re
 import datetime
+import pytz
+from tzlocal import get_localzone
 
 
-indexByWeekday = {
+__all__ = [
+    'WhenIO',
+    'format_interval',
+    'parse_interval',
+]
+_indexByWeekday = {
     'mon': 0, 'monday': 0,
     'tue': 1, 'tuesday': 1,
     'wed': 2, 'wednesday': 2,
@@ -12,111 +18,97 @@ indexByWeekday = {
     'sat': 5, 'saturday': 5,
     'sun': 6, 'sunday': 6,
 }
-dateTemplates = '%m/%d/%Y', '%m/%d/%y', '%m/%d'
-timeTemplates = '%I%p', '%I:%M%p'
-pattern_offset = re.compile(r'([+-]\d\d)(\d\d) UTC')
+_dateTemplates = '%m/%d/%Y', '%m/%d/%y', '%m/%d'
+_timeTemplates = '%I%p', '%I:%M%p'
+_unitLimits = [
+    ('microseconds', 1000000),
+    ('seconds', 60),
+    ('minutes', 60),
+    ('hours', 24),
+    ('days', 7),
+    ('weeks', 4),
+    ('months', 12),
+    ('years', None),
+]
 
 
 class WhenIO(object):
     'Convenience class for formatting and parsing friendly timestamps'
-    
-    # Constructor
 
-    def __init__(self, offsetMinutes=0, localToday=None):
+    def __init__(self, timezone=None, today=None):
         """
         Set user-specific parameters.
-        offsetMinutes  Set offset as returned by Javascript's Date.getTimezoneOffset()
-        localToday     Set reference date to parse special terms like "Today"
+        timezone    Set timezone as returned by jstz, e.g US/Eastern.
+        today       Set reference date to parse special terms, e.g. Today.
         """
-        # Set
-        self.offsetMinutes = offsetMinutes
-        self.localToday = localToday.date() if localToday else self.to_local(datetime.datetime.utcnow()).date()
-        self.localTomorrow = self.localToday + datetime.timedelta(days=1)
-        self.localYesterday = self.localToday + datetime.timedelta(days=-1)
+        self._tz = get_localzone() if not timezone else pytz.timezone(timezone)
+        utcnow = datetime.datetime.utcnow()
+        self._today = today.date() if today else self._to_local(utcnow).date()
+        self._tomorrow = self._today + datetime.timedelta(days=1)
+        self._yesterday = self._today + datetime.timedelta(days=-1)
 
-    # Format
-
-    def format(self, whens, dateTemplate=dateTemplates[0], dateTemplate_='', fromUTC=True, separator=' '):
+    def format(self, whens, dateTemplate=_dateTemplates[0], dateTemplate_='', withLeadingZero=False, fromUTC=True, separator=' '):
         """
         Format whens into strings.
-        whens          A timestamp or list of timestamps
-        dateTemplate   Date template to use when the date is more than seven days from today
-        dateTemplate_  Date template to use when the date is less than seven days from today
-        fromUTC=True   Convert whens to local time before formatting
-        fromUTC=False  Format whens without conversion
+        whens                 A timestamp or list of timestamps
+        dateTemplate          Template when date is more than a week from today
+        dateTemplate_         Template when date is less than a week from today
+        withLeadingZero=True  Prepend leading zero
+        fromUTC=True          Convert to local time before formatting
         """
-        # Convert
         if not isinstance(whens, list):
             whens = [whens]
         if fromUTC:
-            whens = map(self.to_local, whens)
-        # Initialize
+            whens = map(self._to_local, whens)
         strings = []
         previousDate = None
-        # For each when,
         for when in whens:
-            # Ignore null
-            if when == None: 
+            if when is None:
                 continue
-            # If the when matches the previousDate,
             if when.date() == previousDate:
-                # Only format time
-                string = self.format_time(when)
-            # Otherwise,
+                string = self.format_time(when, withLeadingZero)
             else:
-                # Format
-                string = '%s %s' % (self.format_date(when, dateTemplate, dateTemplate_), self.format_time(when))
-            # Append
+                string = '%s %s' % (
+                    self.format_date(when, dateTemplate, dateTemplate_, withLeadingZero),
+                    self.format_time(when, withLeadingZero))
             strings.append(string)
-            # Prepare for next iteration
             previousDate = when.date()
-        # Return
         return separator.join(strings)
 
-    def format_date(self, date, dateTemplate=dateTemplates[0], dateTemplate_=''):
+    def format_date(self, date, dateTemplate=_dateTemplates[0], dateTemplate_='', withLeadingZero=False):
         """
         Format date into string.
-        dateTemplate   Use this template if the date is one week from localToday
-        dateTemplate_  Use this template otherwise
+        dateTemplate          Template when date is more than a week from today
+        dateTemplate_         Template when date is less than a week from today
+        withLeadingZero=True  Prepend leading zero
         """
-        # Convert
-        if isinstance(date, datetime.datetime): 
+        if isinstance(date, datetime.datetime):
             date = date.date()
+        if not withLeadingZero:
+            dateTemplate = dateTemplate.replace('%', '%-')
+            dateTemplate_ = dateTemplate_.replace('%', '%-')
         dateString = date.strftime(dateTemplate_) if dateTemplate_ else ''
         # Format special
-        if date == self.localToday: 
+        if date == self._today:
             return 'Today' + dateString
-        elif date == self.localTomorrow: 
+        elif date == self._tomorrow:
             return 'Tomorrow' + dateString
-        elif date == self.localYesterday: 
+        elif date == self._yesterday:
             return 'Yesterday' + dateString
         # Format weekday
-        differenceInDays = (date - self.localToday).days
+        differenceInDays = (date - self._today).days
         if differenceInDays <= 7 and differenceInDays > 0:
             return date.strftime('%A') + dateString
-        # Return
         return date.strftime(dateTemplate)
 
-    def format_time(self, time):
+    def format_time(self, time, withLeadingZero=False):
         'Format time into string'
-        # Convert
-        if isinstance(time, datetime.datetime): 
+        if isinstance(time, datetime.datetime):
             time = time.time()
-        # Format
-        hour = time.hour % 12
-        if not hour: 
-            hour = 12
-        hour = str(hour)
-        if time.minute == 0: 
-            return hour + time.strftime('%p').lower()
-        # Return
-        return hour + time.strftime(':%M%p').lower()
-
-    def format_offset(self):
-        'Format timezone offset'
-        return format_offset(self.offsetMinutes)
-
-    # Parse
+        timeTemplate = _timeTemplates[1] if time.minute else _timeTemplates[0]
+        if not withLeadingZero:
+            timeTemplate = timeTemplate.replace('%', '%-')
+        return time.strftime(timeTemplate).lower()
 
     def parse(self, whensString, toUTC=True):
         """
@@ -125,24 +117,19 @@ class WhenIO(object):
         toUTC=True   Convert whens to UTC after parsing
         toUTC=False  Parse whens without conversion
         """
-        # Initialize
         whens, terms = [], []
-        # For each term,
         for term in whensString.split():
             # Try to parse the term as a date
             date = self.parse_date(term)
-            # If the term is a date,
-            if date != None: 
+            if date is not None:
                 if date not in whens:
                     whens.append(date)
-                continue # pragma: no cover
+                continue  # pragma: no cover
             # Try to parse the term as a time
             time = self.parse_time(term)
-            # If the term is a time,
-            if time != None: 
-                # Load
+            if time is not None:
                 oldWhen = whens[-1] if whens else None
-                newWhen = self.combine_date_time(oldWhen, time)
+                newWhen = self._combine_date_time(oldWhen, time)
                 # If oldWhen already has a time or we have no whens, append newWhen
                 if isinstance(oldWhen, datetime.datetime) or not whens:
                     whens.append(newWhen)
@@ -156,125 +143,94 @@ class WhenIO(object):
         # Make sure every when has a time
         for whenIndex, when in enumerate(whens):
             if not isinstance(when, datetime.datetime):
-                whens[whenIndex] = self.combine_date_time(when, whenTime=None)
-        # Convert
+                whens[whenIndex] = self._combine_date_time(when, whenTime=None)
         if toUTC:
-            whens = map(self.from_local, whens)
-        # Return
+            whens = map(self._from_local, whens)
         return sorted(whens), terms
 
     def parse_date(self, dateString):
         'Parse date from a string'
-        # Prepare string
         dateString = dateString.strip().lower()
         # Look for special terms
         if dateString in ('today', 'tod'):
-            return self.localToday
+            return self._today
         elif dateString in ('tomorrow', 'tom'):
-            return self.localTomorrow
+            return self._tomorrow
         elif dateString in ('yesterday', 'yes'):
-            return self.localYesterday
-        elif dateString in indexByWeekday:
-            difference = indexByWeekday[dateString] - self.localToday.weekday()
-            if difference <= 0: 
+            return self._yesterday
+        elif dateString in _indexByWeekday:
+            difference = _indexByWeekday[dateString] - self._today.weekday()
+            if difference <= 0:
                 difference += 7
-            return self.localToday + datetime.timedelta(days=difference)
+            return self._today + datetime.timedelta(days=difference)
         # Parse date
-        for template in dateTemplates:
-            try: 
+        for template in _dateTemplates:
+            try:
                 date = datetime.datetime.strptime(dateString, template).date()
             except (ValueError, TypeError):
                 pass
             else:
                 if date.year == 1900:
-                    date = date.replace(year=self.localToday.year)
+                    date = date.replace(year=self._today.year)
                 return date
 
     def parse_time(self, timeString):
         'Parse time from a string'
-        # Prepare string
         timeString = timeString.strip().lower()
         # Parse time
-        for template in timeTemplates:
-            try: 
+        for template in _timeTemplates:
+            try:
                 time = datetime.datetime.strptime(timeString, template).time()
             except (ValueError, TypeError):
                 pass
-            else: 
+            else:
                 return time
 
     # Helpers
 
-    def combine_date_time(self, whenDate, whenTime=None):
+    def _combine_date_time(self, whenDate, whenTime=None):
         'Create when from date and time, assuming where necessary'
-        # If both terms are present, combine them            
-        if whenTime != None and whenDate: 
+        # If both terms are present, combine them
+        if whenTime is not None and whenDate:
             return datetime.datetime.combine(whenDate, whenTime)
         # If only the time is present,
-        if whenTime != None: 
-            return datetime.datetime.combine(self.localToday, whenTime)
+        if whenTime is not None:
+            return datetime.datetime.combine(self._today, whenTime)
         # If only the date is present,
-        if whenDate: 
+        if whenDate:
             return datetime.datetime.combine(whenDate, datetime.time(0, 0))
 
-    def from_local(self, when):
-        'Convert whenLocal into UTC'
+    def _from_local(self, when):
+        'Convert local time into UTC'
         if when:
-            return when + datetime.timedelta(minutes=self.offsetMinutes)
+            return self._tz.localize(when).astimezone(pytz.utc).replace(tzinfo=None)
 
-    def to_local(self, when):
-        'Convert UTC into whenLocal'
-        if when: 
-            return when - datetime.timedelta(minutes=self.offsetMinutes)
-
-
-def format_offset(offsetMinutes):
-    'Format timezone offset'
-    hourCount = offsetMinutes / 60.
-    hourQuotient = int(hourCount)
-    hourRemainder = abs(hourCount - hourQuotient)
-    return '%+03d%02d UTC' % (-1 * hourCount, hourRemainder * 60)
+    def _to_local(self, when):
+        'Convert UTC into local time '
+        if when:
+            return pytz.utc.localize(when).astimezone(self._tz).replace(tzinfo=None)
 
 
-def parse_offset(text):
-    'Parse timezone offset'
-    match = pattern_offset.search(text)
-    if match:
-        x, y = match.groups()
-        x = int(x)
-        y = int(y)
-        offsetMinutes = (1 if x < 0 else -1) * (abs(x) * 60 + y)
-        text = pattern_offset.sub('', text)
-    else:
-        offsetMinutes = None
-    return offsetMinutes, text
-
-
-def format_interval(rdelta, precision=2):
+def format_interval(rdelta, precision=0):
     'Format a relativedelta object rounded to the given precision'
-    units = ['years', 'months', 'days', 'hours', 'minutes', 'seconds']
-    maxes = [12, 30, 24, 60, 60, 1000000]
     packs = []
+    valueByUnit = _serialize_relativedelta(rdelta)
+    unitLimitsReversed = list(reversed(_unitLimits))
     precisionIndex = 0
-    for unit in units:
-        value = getattr(rdelta, unit)
-        # If we have an empty value,
+    for unitIndex, (unit, limit) in enumerate(unitLimitsReversed):
+        value = valueByUnit.get(unit)
         if not value:
-            # If we have skipped a unit, break
             if packs:
                 break
-            # If we have no terms yet, continue
-            continue # pragma: no cover
+            continue  # pragma: no cover
         packs.append([value, unit])
         precisionIndex += 1
-        # If we are at the requested precision,
-        if precisionIndex >= precision:
-            unitIndex = units.index(unit)
-            if unitIndex < len(units):
-                # Look at value of the next unit and round up if necessary
-                valueNext = getattr(rdelta, units[unitIndex + 1])
-                if valueNext > maxes[unitIndex] / 2:
-                    packs[-1][0] += 1
+        if precision and precisionIndex >= precision:
+            # Look at the next value and round up if necessary
+            nextUnit, nextLimit = unitLimitsReversed[unitIndex + 1]
+            nextValue = valueByUnit.get(nextUnit, 0)
+            if nextValue > nextLimit / 2:
+                packs[-1][0] += 1
             break
     # Format terms with appropriate plurality
     return ' '.join('%i %s' % (value, unit if abs(value) != 1 else unit[:-1]) for value, unit in packs)
@@ -291,8 +247,26 @@ def parse_interval(text):
             term += 's'
         if term in units:
             try:
-                value = float(terms[termIndex - 1])
+                value = int(terms[termIndex - 1])
             except ValueError:
                 continue
             valueByUnit[term] = value
     return relativedelta(**valueByUnit)
+
+
+def _serialize_relativedelta(rdelta):
+    'Use larger units when possible and introduce new units'
+    valueByUnit = {}
+    for index, (unit, limit) in enumerate(_unitLimits):
+        try:
+            value = valueByUnit.get(unit, 0) + getattr(rdelta, unit)
+        except AttributeError:
+            continue
+        if limit and value >= limit:
+            nextUnit = _unitLimits[index + 1][0]
+            nextValue = valueByUnit.get(nextUnit, 0)
+            valueByUnit[nextUnit] = nextValue + value / limit
+            value = value % limit
+        if value:
+            valueByUnit[unit] = value
+    return valueByUnit

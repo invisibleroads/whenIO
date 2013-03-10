@@ -11,7 +11,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 
 setup(
     name='whenIO',
-    version='1.2',
+    version='1.3',
     description='Methods for formatting and parsing friendly timestamps',
     long_description=README + '\n\n' +  CHANGES,
     license='MIT',
@@ -26,7 +26,11 @@ setup(
     url='https://github.com/invisibleroads/whenIO',
     packages=find_packages(),
     include_package_data=True,
-    install_requires=['python-dateutil'],
+    install_requires=[
+        'python-dateutil',
+        'pytz',
+        'tzlocal',
+    ],
     test_suite='whenIO.tests',
     tests_require=['nose'],
     zip_safe=True)
