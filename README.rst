@@ -24,7 +24,10 @@ Usage
     'Today 2:30pm'
     >>> w.format(datetime.datetime.utcnow(), dateTemplate_=' %m/%d/%Y')
     'Today 3/10/2013 2:30pm'
-    >>> w.format([datetime.datetime(2000, 1, 1, 0, 0), datetime.datetime(2000, 1, 1, 1, 0)], fromUTC=False)
+    >>> w.format([
+    ...     datetime.datetime(2000, 1, 1, 0, 0),
+    ...     datetime.datetime(2000, 1, 1, 1, 0),
+    ... ], fromUTC=False)
     '1/1/2000 12am 1am'
 
     >>> w.parse('10am', toUTC=False)[0]
