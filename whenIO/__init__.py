@@ -47,21 +47,23 @@ class WhenIO(object):
         self._tomorrow = self._today + datetime.timedelta(days=1)
         self._yesterday = self._today + datetime.timedelta(days=-1)
 
-    def format(self, whens, dateTemplate=_dateTemplates[0], dateTemplate_='', withLeadingZero=False, fromUTC=True, separator=' '):
+    def format(self, whens, dateTemplate=_dateTemplates[0], dateTemplate_='', withLeadingZero=False, previousDate=None, withStartDate=True, fromUTC=True, separator=' '):
         """
         Format whens into strings.
         whens                 A timestamp or list of timestamps
         dateTemplate          Template when date is more than a week from today
         dateTemplate_         Template when date is less than a week from today
         withLeadingZero=True  Prepend leading zero
+        withStartDate=True    Prepend start date
         fromUTC=True          Convert to local time before formatting
         """
         if not isinstance(whens, list):
             whens = [whens]
         if fromUTC:
             whens = map(self._to_local, whens)
+        whens = sorted(whens)
         strings = []
-        previousDate = None
+        previousDate = None if withStartDate else whens[0].date()
         for when in whens:
             if when is None:
                 continue

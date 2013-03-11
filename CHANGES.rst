@@ -1,10 +1,10 @@
 1.3
 ---
-- Updated constructor to use timezones from pytz and tzlocal
+- Changed constructor to use timezones from pytz and tzlocal
 - Added weeks to format_interval()
-- Added withLeadingZero argument to format(), format_date(), format_time()
-- Removed parse_offset()
-- Removed format_offset()
+- Added withLeadingZero to format(), format_date(), format_time()
+- Added withStartDate to format()
+- Removed parse_offset(), format_offset()
 
 1.2
 ---
