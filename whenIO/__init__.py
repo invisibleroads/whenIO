@@ -61,12 +61,10 @@ class WhenIO(object):
             whens = [whens]
         if fromUTC:
             whens = map(self._to_local, whens)
-        whens = sorted(whens)
+        whens = sorted(filter(lambda _: _, whens))
         strings = []
         previousDate = None if withStartDate else whens[0].date()
         for when in whens:
-            if when is None:
-                continue
             if when.date() == previousDate:
                 string = self.format_time(when, withLeadingZero)
             else:

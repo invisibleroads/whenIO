@@ -59,6 +59,7 @@ class Test(unittest.TestCase):
         assertFormat(datetime.datetime(2009, 5, 1), 'Today 20090501 12am', dateTemplate_=' %Y%m%d', withLeadingZero=True)
         # Test edge cases
         self.whenIO.format([None])
+        self.whenIO.format([datetime.datetime(2000, 1, 1), None])
 
     def test_parse(self):
         'Test that parsing works properly'
