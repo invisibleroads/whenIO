@@ -22,7 +22,7 @@ Usage
     'Today 2:30pm'
     >>> w.format(datetime.datetime.utcnow())
     'Today 2:30pm'
-    >>> w.format(datetime.datetime.utcnow(), dateTemplate_=' %m/%d/%Y')
+    >>> w.format(datetime.datetime.utcnow(), forceDate=True)
     'Today 3/10/2013 2:30pm'
     >>> date1 = datetime.datetime(2000, 1, 1, 0, 0)
     >>> date2 = datetime.datetime(2000, 1, 1, 1, 0)

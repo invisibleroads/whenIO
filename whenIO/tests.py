@@ -55,8 +55,7 @@ class Test(unittest.TestCase):
                 stringLong = 'tomorrow'
             assertFormat(date, stringLong.title() + ' 12am')
         # Test custom templates
-        assertFormat(datetime.datetime(2009, 1, 1), 'Thursday 20090101 12am', dateTemplate='%A %Y%m%d', withLeadingZero=True)
-        assertFormat(datetime.datetime(2009, 5, 1), 'Today 20090501 12am', dateTemplate_=' %Y%m%d', withLeadingZero=True)
+        assertFormat(datetime.datetime(2009, 1, 1), '20090101 12am', dateTemplate='%Y%m%d', withLeadingZero=True)
         # Test edge cases
         self.whenIO.format([None])
         self.whenIO.format([datetime.datetime(2000, 1, 1), None])

@@ -47,59 +47,68 @@ class WhenIO(object):
         self._tomorrow = self._today + datetime.timedelta(days=1)
         self._yesterday = self._today + datetime.timedelta(days=-1)
 
-    def format(self, whens, dateTemplate=_dateTemplates[0], dateTemplate_='', withLeadingZero=False, previousDate=None, withStartDate=True, fromUTC=True, separator=' '):
+    def format(self, timestamps,
+               dateTemplate=_dateTemplates[0],
+               withLeadingZero=False,
+               omitStartDate=False,
+               forceDate=False,
+               fromUTC=True,
+               separator=' '):
         """
-        Format whens into strings.
-        whens                 A timestamp or list of timestamps
-        dateTemplate          Template when date is more than a week from today
-        dateTemplate_         Template when date is less than a week from today
+        Format timestamps into strings.
+        timestamps            A timestamp or list of timestamps
+        dateTemplate          Template when date is more than a week away
         withLeadingZero=True  Prepend leading zero
-        withStartDate=True    Prepend start date
+        omitStartDate=True    Omit start date
+        forceDate=True        Show date even when it is less than a week away
         fromUTC=True          Convert to local time before formatting
+        separator=' - '       Specify a custom separator between timestamps
         """
-        if not isinstance(whens, list):
-            whens = [whens]
+        if not isinstance(timestamps, list):
+            timestamps = [timestamps]
         if fromUTC:
-            whens = map(self._to_local, whens)
-        whens = sorted(filter(lambda _: _, whens))
+            timestamps = map(self._to_local, timestamps)
+        timestamps = sorted(filter(lambda _: _, timestamps))
         strings = []
-        previousDate = None if withStartDate else whens[0].date()
-        for when in whens:
-            if when.date() == previousDate:
-                string = self.format_time(when, withLeadingZero)
+        previousDate = timestamps[0].date() if omitStartDate else None
+        for timestamp in timestamps:
+            if timestamp.date() == previousDate:
+                string = self.format_time(timestamp, withLeadingZero)
             else:
                 string = '%s %s' % (
-                    self.format_date(when, dateTemplate, dateTemplate_, withLeadingZero),
-                    self.format_time(when, withLeadingZero))
+                    self.format_date(timestamp, dateTemplate, withLeadingZero, forceDate),
+                    self.format_time(timestamp, withLeadingZero))
             strings.append(string)
-            previousDate = when.date()
+            previousDate = timestamp.date()
         return separator.join(strings)
 
-    def format_date(self, date, dateTemplate=_dateTemplates[0], dateTemplate_='', withLeadingZero=False):
+    def format_date(self, date,
+                    dateTemplate=_dateTemplates[0],
+                    withLeadingZero=False,
+                    forceDate=False):
         """
         Format date into string.
-        dateTemplate          Template when date is more than a week from today
-        dateTemplate_         Template when date is less than a week from today
+        dateTemplate          Template when date is more than a week away
         withLeadingZero=True  Prepend leading zero
+        forceDate=True        Show date even when it is less than a week away
         """
         if isinstance(date, datetime.datetime):
             date = date.date()
         if not withLeadingZero:
             dateTemplate = dateTemplate.replace('%', '%-')
-            dateTemplate_ = dateTemplate_.replace('%', '%-')
-        dateString = date.strftime(dateTemplate_) if dateTemplate_ else ''
-        # Format special
+        dateString_ = date.strftime(dateTemplate)
+        dateString = ' ' + dateString_ if forceDate else ''
+        differenceInDays = (date - self._today).days
         if date == self._today:
             return 'Today' + dateString
         elif date == self._tomorrow:
             return 'Tomorrow' + dateString
         elif date == self._yesterday:
             return 'Yesterday' + dateString
-        # Format weekday
-        differenceInDays = (date - self._today).days
-        if differenceInDays <= 7 and differenceInDays > 0:
+        elif differenceInDays <= 7 and differenceInDays > 0:
             return date.strftime('%A') + dateString
-        return date.strftime(dateTemplate)
+        else:
+            return dateString_
 
     def format_time(self, time, withLeadingZero=False):
         'Format time into string'
@@ -110,43 +119,41 @@ class WhenIO(object):
             timeTemplate = timeTemplate.replace('%', '%-')
         return time.strftime(timeTemplate).lower()
 
-    def parse(self, whensString, toUTC=True):
+    def parse(self, text, toUTC=True):
         """
-        Parse whens from strings.
-        whensString  A string of timestamps
-        toUTC=True   Convert whens to UTC after parsing
-        toUTC=False  Parse whens without conversion
+        Parse timestamps from strings.
+        text         A string of timestamps
+        toUTC=True   Convert timestamps to UTC after parsing
+        toUTC=False  Parse timestamps without conversion
         """
-        whens, terms = [], []
-        for term in whensString.split():
+        timestamps, terms = [], []
+        for term in text.split():
             # Try to parse the term as a date
             date = self.parse_date(term)
             if date is not None:
-                if date not in whens:
-                    whens.append(date)
+                if date not in timestamps:
+                    timestamps.append(date)
                 continue  # pragma: no cover
             # Try to parse the term as a time
             time = self.parse_time(term)
             if time is not None:
-                oldWhen = whens[-1] if whens else None
-                newWhen = self._combine_date_time(oldWhen, time)
-                # If oldWhen already has a time or we have no whens, append newWhen
-                if isinstance(oldWhen, datetime.datetime) or not whens:
-                    whens.append(newWhen)
-                # If oldWhen did not have a time, replace oldWhen
+                oldTimestamp = timestamps[-1] if timestamps else None
+                newTimestamp = self._combine_date_time(oldTimestamp, time)
+                if isinstance(oldTimestamp, datetime.datetime) or not timestamps:
+                    timestamps.append(newTimestamp)
                 else:
-                    whens[-1] = newWhen
+                    timestamps[-1] = newTimestamp
                 continue
             # If it is neither a date nor a time, save it
             if term not in terms:
                 terms.append(term)
-        # Make sure every when has a time
-        for whenIndex, when in enumerate(whens):
-            if not isinstance(when, datetime.datetime):
-                whens[whenIndex] = self._combine_date_time(when, whenTime=None)
+        # Make sure every timestamp has a time
+        for index, timestamp in enumerate(timestamps):
+            if not isinstance(timestamp, datetime.datetime):
+                timestamps[index] = self._combine_date_time(timestamp)
         if toUTC:
-            whens = map(self._from_local, whens)
-        return sorted(whens), terms
+            timestamps = map(self._from_local, timestamps)
+        return sorted(timestamps), terms
 
     def parse_date(self, dateString):
         'Parse date from a string'
@@ -188,27 +195,27 @@ class WhenIO(object):
 
     # Helpers
 
-    def _combine_date_time(self, whenDate, whenTime=None):
-        'Create when from date and time, assuming where necessary'
+    def _combine_date_time(self, date, time=None):
+        'Create timestamp from date and time, assuming where necessary'
         # If both terms are present, combine them
-        if whenTime is not None and whenDate:
-            return datetime.datetime.combine(whenDate, whenTime)
+        if time is not None and date:
+            return datetime.datetime.combine(date, time)
         # If only the time is present,
-        if whenTime is not None:
-            return datetime.datetime.combine(self._today, whenTime)
+        if time is not None:
+            return datetime.datetime.combine(self._today, time)
         # If only the date is present,
-        if whenDate:
-            return datetime.datetime.combine(whenDate, datetime.time(0, 0))
+        if date:
+            return datetime.datetime.combine(date, datetime.time(0, 0))
 
-    def _from_local(self, when):
+    def _from_local(self, timestamp):
         'Convert local time into UTC'
-        if when:
-            return self._tz.localize(when).astimezone(pytz.utc).replace(tzinfo=None)
+        if timestamp:
+            return self._tz.localize(timestamp).astimezone(pytz.utc).replace(tzinfo=None)
 
-    def _to_local(self, when):
+    def _to_local(self, timestamp):
         'Convert UTC into local time '
-        if when:
-            return pytz.utc.localize(when).astimezone(self._tz).replace(tzinfo=None)
+        if timestamp:
+            return pytz.utc.localize(timestamp).astimezone(self._tz).replace(tzinfo=None)
 
 
 def format_interval(rdelta, precision=0):

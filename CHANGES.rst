@@ -1,3 +1,8 @@
+1.4
+---
+- Added forceDate to format(), format_date()
+- Replaced withStartDate to omitStartDate
+
 1.3
 ---
 - Changed constructor to use timezones from pytz and tzlocal
