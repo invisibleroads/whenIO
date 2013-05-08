@@ -91,7 +91,7 @@ class Test(unittest.TestCase):
     def test_interval(self):
         self.assertEqual('1 week', whenIO.format_interval(whenIO.parse_interval('1 week 1 second')))
         self.assertEqual('2 years', whenIO.format_interval(whenIO.parse_interval('1 year 8 months'), precision=1))
-        self.assertEqual('3 months 1 week', whenIO.format_interval(whenIO.parse_interval('3 months 9 days 23 hours'), precision=2))
-        self.assertEqual('1 week', whenIO.format_interval(whenIO.parse_interval('200 hours'), precision=1))
+        self.assertEqual('3 months 1 week', whenIO.format_interval(whenIO.parse_interval('3mo 9dy 23hr'), precision=2))
+        self.assertEqual('1 week', whenIO.format_interval(whenIO.parse_interval('200h'), precision=1))
         # Test edge cases
         whenIO.parse_interval('xxx hours')

@@ -1,6 +1,7 @@
 'Methods for formatting and parsing friendly timestamps'
 import datetime
 import pytz
+import re
 from tzlocal import get_localzone
 
 
@@ -9,7 +10,7 @@ __all__ = [
     'format_interval',
     'parse_interval',
 ]
-_indexByWeekday = {
+_INDEX_BY_WEEKDAY = {
     'mon': 0, 'monday': 0,
     'tue': 1, 'tuesday': 1,
     'wed': 2, 'wednesday': 2,
@@ -18,9 +19,9 @@ _indexByWeekday = {
     'sat': 5, 'saturday': 5,
     'sun': 6, 'sunday': 6,
 }
-_dateTemplates = '%m/%d/%Y', '%m/%d/%y', '%m/%d'
-_timeTemplates = '%I%p', '%I:%M%p'
-_unitLimits = [
+_DATE_TEMPLATES = '%m/%d/%Y', '%m/%d/%y', '%m/%d'
+_TIME_TEMPLATES = '%I%p', '%I:%M%p'
+_UNIT_LIMITS = [
     ('microseconds', 1000000),
     ('seconds', 60),
     ('minutes', 60),
@@ -30,6 +31,9 @@ _unitLimits = [
     ('months', 12),
     ('years', None),
 ]
+_UNIT_WORDS = 'year', 'month', 'week', 'day', 'hour', 'minute', 'second'
+_UNIT_ABBREVIATIONS = 'yr', 'mo', 'wk', 'dy', 'hr', 'min', 'sec'
+_UNIT_LETTERS = 'y', 'l', 'w', 'd', 'h', 'm', 's'
 
 
 class WhenIO(object):
@@ -48,7 +52,7 @@ class WhenIO(object):
         self._yesterday = self._today + datetime.timedelta(days=-1)
 
     def format(self, timestamps,
-               dateTemplate=_dateTemplates[0],
+               dateTemplate=_DATE_TEMPLATES[0],
                withLeadingZero=False,
                omitStartDate=False,
                forceDate=False,
@@ -76,14 +80,15 @@ class WhenIO(object):
                 string = self.format_time(timestamp, withLeadingZero)
             else:
                 string = '%s %s' % (
-                    self.format_date(timestamp, dateTemplate, withLeadingZero, forceDate),
+                    self.format_date(
+                        timestamp, dateTemplate, withLeadingZero, forceDate),
                     self.format_time(timestamp, withLeadingZero))
             strings.append(string)
             previousDate = timestamp.date()
         return separator.join(strings)
 
     def format_date(self, date,
-                    dateTemplate=_dateTemplates[0],
+                    dateTemplate=_DATE_TEMPLATES[0],
                     withLeadingZero=False,
                     forceDate=False):
         """
@@ -114,7 +119,10 @@ class WhenIO(object):
         'Format time into string'
         if isinstance(time, datetime.datetime):
             time = time.time()
-        timeTemplate = _timeTemplates[1] if time.minute else _timeTemplates[0]
+        if time.minute:
+            timeTemplate = _TIME_TEMPLATES[1]
+        else:
+            timeTemplate = _TIME_TEMPLATES[0]
         if not withLeadingZero:
             timeTemplate = timeTemplate.replace('%', '%-')
         return time.strftime(timeTemplate).lower()
@@ -126,7 +134,7 @@ class WhenIO(object):
         toUTC=True   Convert timestamps to UTC after parsing
         toUTC=False  Parse timestamps without conversion
         """
-        timestamps, terms = [], []
+        timestamps, scraps = [], []
         for term in text.split():
             # Try to parse the term as a date
             date = self.parse_date(term)
@@ -145,15 +153,15 @@ class WhenIO(object):
                     timestamps[-1] = newTimestamp
                 continue
             # If it is neither a date nor a time, save it
-            if term not in terms:
-                terms.append(term)
+            if term not in scraps:
+                scraps.append(term)
         # Make sure every timestamp has a time
         for index, timestamp in enumerate(timestamps):
             if not isinstance(timestamp, datetime.datetime):
                 timestamps[index] = self._combine_date_time(timestamp)
         if toUTC:
             timestamps = map(self._from_local, timestamps)
-        return sorted(timestamps), terms
+        return sorted(timestamps), scraps
 
     def parse_date(self, dateString):
         'Parse date from a string'
@@ -165,13 +173,13 @@ class WhenIO(object):
             return self._tomorrow
         elif dateString in ('yesterday', 'yes'):
             return self._yesterday
-        elif dateString in _indexByWeekday:
-            difference = _indexByWeekday[dateString] - self._today.weekday()
+        elif dateString in _INDEX_BY_WEEKDAY:
+            difference = _INDEX_BY_WEEKDAY[dateString] - self._today.weekday()
             if difference <= 0:
                 difference += 7
             return self._today + datetime.timedelta(days=difference)
         # Parse date
-        for template in _dateTemplates:
+        for template in _DATE_TEMPLATES:
             try:
                 date = datetime.datetime.strptime(dateString, template).date()
             except (ValueError, TypeError):
@@ -185,7 +193,7 @@ class WhenIO(object):
         'Parse time from a string'
         timeString = timeString.strip().lower()
         # Parse time
-        for template in _timeTemplates:
+        for template in _TIME_TEMPLATES:
             try:
                 time = datetime.datetime.strptime(timeString, template).time()
             except (ValueError, TypeError):
@@ -222,7 +230,7 @@ def format_interval(rdelta, precision=0):
     'Format a relativedelta object rounded to the given precision'
     packs = []
     valueByUnit = _serialize_relativedelta(rdelta)
-    unitLimitsReversed = list(reversed(_unitLimits))
+    unitLimitsReversed = list(reversed(_UNIT_LIMITS))
     precisionIndex = 0
     for unitIndex, (unit, limit) in enumerate(unitLimitsReversed):
         value = valueByUnit.get(unit)
@@ -243,37 +251,51 @@ def format_interval(rdelta, precision=0):
     return ' '.join('%i %s' % (value, unit if abs(value) != 1 else unit[:-1]) for value, unit in packs)
 
 
-def parse_interval(text):
-    'Parse a relativedelta object from a string'
-    from dateutil.relativedelta import relativedelta
-    units = ['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds']
-    terms = text.split()
-    valueByUnit = {}
-    for termIndex, term in enumerate(terms[1:], 1):
-        if not term.endswith('s'):
-            term += 's'
-        if term in units:
-            try:
-                value = int(terms[termIndex - 1])
-            except ValueError:
-                continue
-            valueByUnit[term] = value
-    return relativedelta(**valueByUnit)
-
-
 def _serialize_relativedelta(rdelta):
     'Use larger units when possible and introduce new units'
     valueByUnit = {}
-    for index, (unit, limit) in enumerate(_unitLimits):
+    for index, (unit, limit) in enumerate(_UNIT_LIMITS):
         try:
             value = valueByUnit.get(unit, 0) + getattr(rdelta, unit)
         except AttributeError:
             continue
         if limit and value >= limit:
-            nextUnit = _unitLimits[index + 1][0]
+            nextUnit = _UNIT_LIMITS[index + 1][0]
             nextValue = valueByUnit.get(nextUnit, 0)
             valueByUnit[nextUnit] = nextValue + value / limit
             value = value % limit
         if value:
             valueByUnit[unit] = value
     return valueByUnit
+
+
+def parse_interval(text):
+    'Parse a relativedelta object from a string'
+    from dateutil.relativedelta import relativedelta
+    terms = re.sub(r'([0-9])([A-Za-z])', r'\1 \2', text).split()
+    valueByUnit = {}
+    for termIndex, term in enumerate(terms):
+        try:
+            nextTerm = terms[termIndex + 1]
+        except IndexError:
+            break
+        try:
+            value = int(term)
+            unit = _get_unit(nextTerm) + 's'
+        except ValueError:
+            continue
+        valueByUnit[unit] = value
+    return relativedelta(**valueByUnit)
+
+
+def _get_unit(term):
+    try:
+        return _UNIT_WORDS[_UNIT_LETTERS.index(term)]
+    except ValueError:
+        pass
+    term = term.rstrip('s')
+    try:
+        return _UNIT_WORDS[_UNIT_ABBREVIATIONS.index(term)]
+    except ValueError:
+        pass
+    return _UNIT_WORDS[_UNIT_WORDS.index(term)]

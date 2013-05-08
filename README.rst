@@ -39,7 +39,7 @@ Usage
     [datetime.datetime(2013, 3, 11, 10, 0), 
      datetime.datetime(2013, 3, 11, 12, 0)]
 
-    >>> rdelta = whenIO.parse_interval('2 years 7 months 1 second')
+    >>> rdelta = whenIO.parse_interval('2yrs 7mos 1sec')
     >>> whenIO.format_interval(rdelta, precision=1)
     '3 years'
     >>> whenIO.format_interval(rdelta, precision=2)

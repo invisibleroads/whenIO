@@ -1,3 +1,7 @@
+1.5
+---
+- Added support for unit abbreviations and letters to parse_interval()
+
 1.4
 ---
 - Added forceDate to format(), format_date()
