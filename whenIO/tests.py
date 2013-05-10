@@ -88,10 +88,19 @@ class Test(unittest.TestCase):
             assertParse(stringShort, datetime.datetime.combine(date, datetime.time(0, 0)))
             assertParse(stringLong, datetime.datetime.combine(date, datetime.time(0, 0)))
 
-    def test_interval(self):
-        self.assertEqual('1 week', whenIO.format_interval(whenIO.parse_interval('1 week 1 second')))
-        self.assertEqual('2 years', whenIO.format_interval(whenIO.parse_interval('1 year 8 months'), precision=1))
-        self.assertEqual('3 months 1 week', whenIO.format_interval(whenIO.parse_interval('3mo 9dy 23hr'), precision=2))
-        self.assertEqual('1 week', whenIO.format_interval(whenIO.parse_interval('200h'), precision=1))
+    def test_duration(self):
+        self.assertEqual('1 week', whenIO.format_duration(
+            whenIO.parse_duration('7 days')))
+        self.assertEqual('2 years', whenIO.format_duration(
+            whenIO.parse_duration('1 year 8 months'), 
+            precision=1))
+        self.assertEqual('3l 1w', whenIO.format_duration(
+            whenIO.parse_duration('3mo 9dy 23hr'), 
+            precision=2, 
+            style='letters'))
+        self.assertEqual('1 wk', whenIO.format_duration(
+            whenIO.parse_duration('200h'), 
+            precision=1,
+            style='abbreviations'))
         # Test edge cases
-        whenIO.parse_interval('xxx hours')
+        whenIO.parse_duration('xxx hours')

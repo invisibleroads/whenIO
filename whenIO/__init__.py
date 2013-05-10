@@ -7,8 +7,8 @@ from tzlocal import get_localzone
 
 __all__ = [
     'WhenIO',
-    'format_interval',
-    'parse_interval',
+    'format_duration',
+    'parse_duration',
 ]
 _INDEX_BY_WEEKDAY = {
     'mon': 0, 'monday': 0,
@@ -226,19 +226,27 @@ class WhenIO(object):
             return pytz.utc.localize(timestamp).astimezone(self._tz).replace(tzinfo=None)
 
 
-def format_interval(rdelta, precision=0):
-    'Format a relativedelta object rounded to the given precision'
+def format_duration(rdelta, precision=0, style='words'):
+    """
+    Format a relativedelta object rounded to the given precision.
+    Set style='abbreviations' for two and three letter unit abbreviations.
+    Set style='letters' for one letter abbreviations.
+    """
     packs = []
     valueByUnit = _serialize_relativedelta(rdelta)
     unitLimitsReversed = list(reversed(_UNIT_LIMITS))
+    units = {
+        'words': _UNIT_WORDS,
+        'abbreviations': _UNIT_ABBREVIATIONS,
+        'letters': _UNIT_LETTERS,
+    }[style]
+    padding = '' if style == 'letters' else ' '
     precisionIndex = 0
     for unitIndex, (unit, limit) in enumerate(unitLimitsReversed):
         value = valueByUnit.get(unit)
         if not value:
-            if packs:
-                break
             continue  # pragma: no cover
-        packs.append([value, unit])
+        packs.append([value, padding + units[unitIndex]])
         precisionIndex += 1
         if precision and precisionIndex >= precision:
             # Look at the next value and round up if necessary
@@ -248,7 +256,10 @@ def format_interval(rdelta, precision=0):
                 packs[-1][0] += 1
             break
     # Format terms with appropriate plurality
-    return ' '.join('%i %s' % (value, unit if abs(value) != 1 else unit[:-1]) for value, unit in packs)
+    return ' '.join('%i%s' % (
+        value, 
+        unit + 's' if len(unit) > 1 and abs(value) != 1 else unit,
+    ) for value, unit in packs)
 
 
 def _serialize_relativedelta(rdelta):
@@ -269,7 +280,7 @@ def _serialize_relativedelta(rdelta):
     return valueByUnit
 
 
-def parse_interval(text):
+def parse_duration(text):
     'Parse a relativedelta object from a string'
     from dateutil.relativedelta import relativedelta
     terms = re.sub(r'([0-9])([A-Za-z])', r'\1 \2', text).split()
