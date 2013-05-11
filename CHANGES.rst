@@ -1,7 +1,7 @@
 1.5
 ---
-- Added support for unit abbreviations and letters to parse_duration()
-- Added support for unit abbreviations and letters to format_duration()
+- Added unit abbreviations and letters to parse_duration(), format_duration()
+- Added control over rounding behavior to format_duration()
 
 1.4
 ---

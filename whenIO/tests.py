@@ -29,16 +29,21 @@ class Test(unittest.TestCase):
     def test_format(self):
         'Test that formatting works properly'
         def assertFormat(whens, whensString, **kw):
-            self.assertEqual(self.whenIO.format(whens, fromUTC=False, **kw), whensString)
-            if not hasattr(whens, '__iter__'):
-                whens = [whens]
+            self.assertEqual(self.whenIO.format(
+                whens, fromUTC=False, **kw), whensString)
             self.assertEqual(self.whenIO.format([
                 self.whenIO._from_local(x) for x in whens
             ], fromUTC=True, **kw), whensString)
         # Test regular dates
-        assertFormat(datetime.datetime(2009, 1, 1),         '1/1/2009 12am')
-        assertFormat(datetime.datetime(2009, 1, 1, 3),      '1/1/2009 3am')
-        assertFormat(datetime.datetime(2009, 1, 1, 15, 15), '1/1/2009 3:15pm')
+        assertFormat([
+            datetime.datetime(2009, 1, 1),
+        ], '1/1/2009 12am')
+        assertFormat([
+            datetime.datetime(2009, 1, 1, 3),
+        ], '1/1/2009 3am')
+        assertFormat([
+            datetime.datetime(2009, 1, 1, 15, 15),
+        ], '1/1/2009 3:15pm')
         # Test multiple dates
         assertFormat([
             datetime.datetime(2000, 1, 1, 0, 0),
@@ -53,10 +58,13 @@ class Test(unittest.TestCase):
         for stringShort, stringLong, date in specialPacks:
             if date == datetime.datetime(2009, 5, 2):
                 stringLong = 'tomorrow'
-            assertFormat(date, stringLong.title() + ' 12am')
+            assertFormat([date], stringLong.title() + ' 12am')
         # Test custom templates
-        assertFormat(datetime.datetime(2009, 1, 1), '20090101 12am', dateTemplate='%Y%m%d', withLeadingZero=True)
+        assertFormat([
+            datetime.datetime(2009, 1, 1),
+        ], '20090101 12am', dateTemplate='%Y%m%d', withLeadingZero=True)
         # Test edge cases
+        self.whenIO.format(None)
         self.whenIO.format([None])
         self.whenIO.format([datetime.datetime(2000, 1, 1), None])
 
@@ -65,10 +73,10 @@ class Test(unittest.TestCase):
         def assertParse(whensString, whens):
             if not hasattr(whens, '__iter__'):
                 whens = [whens]
-            self.assertEqual(self.whenIO.parse(whensString, toUTC=False)[0], whens)
-            self.assertEqual(self.whenIO.parse(whensString, toUTC=True)[0], [
-                self.whenIO._from_local(x) for x in whens
-            ])
+            self.assertEqual(self.whenIO.parse(whensString, toUTC=False)[0],
+                             whens)
+            self.assertEqual(self.whenIO.parse(whensString, toUTC=True)[0],
+                             [self.whenIO._from_local(x) for x in whens])
         # Test regular dates
         assertParse('12am',            datetime.datetime(2009, 5, 1, 0, 0))
         assertParse('12am text',       datetime.datetime(2009, 5, 1, 0, 0))
@@ -85,22 +93,42 @@ class Test(unittest.TestCase):
         ])
         # Test special dates
         for stringShort, stringLong, date in specialPacks:
-            assertParse(stringShort, datetime.datetime.combine(date, datetime.time(0, 0)))
-            assertParse(stringLong, datetime.datetime.combine(date, datetime.time(0, 0)))
+            assertParse(stringShort,
+                        datetime.datetime.combine(date, datetime.time(0, 0)))
+            assertParse(stringLong,
+                        datetime.datetime.combine(date, datetime.time(0, 0)))
 
     def test_duration(self):
         self.assertEqual('1 week', whenIO.format_duration(
             whenIO.parse_duration('7 days')))
         self.assertEqual('2 years', whenIO.format_duration(
-            whenIO.parse_duration('1 year 8 months'), 
+            whenIO.parse_duration('1 year 8 months'),
             precision=1))
-        self.assertEqual('3l 1w', whenIO.format_duration(
-            whenIO.parse_duration('3mo 9dy 23hr'), 
-            precision=2, 
+        self.assertEqual('3l 2w', whenIO.format_duration(
+            whenIO.parse_duration('3mo 9dy 23hr'),
+            precision=2,
             style='letters'))
-        self.assertEqual('1 wk', whenIO.format_duration(
-            whenIO.parse_duration('200h'), 
+        self.assertEqual('2 wks', whenIO.format_duration(
+            whenIO.parse_duration('200h'),
             precision=1,
             style='abbreviations'))
         # Test edge cases
         whenIO.parse_duration('xxx hours')
+
+    def test_duration_rounding(self):
+        # Round up
+        rdelta = whenIO.parse_duration('1 week 4 days')
+        self.assertEqual('2 weeks', whenIO.format_duration(
+            rdelta, precision=1, rounding='ceiling'))
+        self.assertEqual('1 week', whenIO.format_duration(
+            rdelta, precision=1, rounding='floor'))
+        self.assertEqual('2 weeks', whenIO.format_duration(
+            rdelta, precision=1, rounding='round'))
+        # Round down
+        rdelta = whenIO.parse_duration('1 week 3 days')
+        self.assertEqual('2 weeks', whenIO.format_duration(
+            rdelta, precision=1, rounding='ceiling'))
+        self.assertEqual('1 week', whenIO.format_duration(
+            rdelta, precision=1, rounding='floor'))
+        self.assertEqual('1 week', whenIO.format_duration(
+            rdelta, precision=1, rounding='round'))

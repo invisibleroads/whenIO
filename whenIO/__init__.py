@@ -226,11 +226,15 @@ class WhenIO(object):
             return pytz.utc.localize(timestamp).astimezone(self._tz).replace(tzinfo=None)
 
 
-def format_duration(rdelta, precision=0, style='words'):
+def format_duration(rdelta, precision=0, style='words', rounding='ceiling'):
     """
     Format a relativedelta object rounded to the given precision.
-    Set style='abbreviations' for two and three letter unit abbreviations.
-    Set style='letters' for one letter abbreviations.
+
+    Set style='abbreviations' to abbreviate units.
+    Set style='letters' to abbreviate to one letter.
+
+    Set rounding='floor' to truncate.
+    Set rounding='round' to round up.
     """
     packs = []
     valueByUnit = _serialize_relativedelta(rdelta)
@@ -240,6 +244,11 @@ def format_duration(rdelta, precision=0, style='words'):
         'abbreviations': _UNIT_ABBREVIATIONS,
         'letters': _UNIT_LETTERS,
     }[style]
+    get_adjustment = {
+        'ceiling': lambda value, limit: 1 if value else 0,
+        'floor': lambda value, limit: 0,
+        'round': lambda value, limit: 1 if value > limit / 2 else 0,
+    }[rounding]
     padding = '' if style == 'letters' else ' '
     precisionIndex = 0
     for unitIndex, (unit, limit) in enumerate(unitLimitsReversed):
@@ -249,11 +258,10 @@ def format_duration(rdelta, precision=0, style='words'):
         packs.append([value, padding + units[unitIndex]])
         precisionIndex += 1
         if precision and precisionIndex >= precision:
-            # Look at the next value and round up if necessary
+            # Look at the next value and adjust if necessary
             nextUnit, nextLimit = unitLimitsReversed[unitIndex + 1]
             nextValue = valueByUnit.get(nextUnit, 0)
-            if nextValue > nextLimit / 2:
-                packs[-1][0] += 1
+            packs[-1][0] += get_adjustment(nextValue, nextLimit)
             break
     # Format terms with appropriate plurality
     return ' '.join('%i%s' % (
@@ -266,17 +274,13 @@ def _serialize_relativedelta(rdelta):
     'Use larger units when possible and introduce new units'
     valueByUnit = {}
     for index, (unit, limit) in enumerate(_UNIT_LIMITS):
-        try:
-            value = valueByUnit.get(unit, 0) + getattr(rdelta, unit)
-        except AttributeError:
-            continue
+        value = valueByUnit.get(unit, 0) + getattr(rdelta, unit, 0)
         if limit and value >= limit:
             nextUnit = _UNIT_LIMITS[index + 1][0]
             nextValue = valueByUnit.get(nextUnit, 0)
             valueByUnit[nextUnit] = nextValue + value / limit
             value = value % limit
-        if value:
-            valueByUnit[unit] = value
+        valueByUnit[unit] = value
     return valueByUnit
 
 
