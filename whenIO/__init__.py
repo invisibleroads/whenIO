@@ -299,8 +299,10 @@ def parse_duration(text):
             unit = _get_unit(nextTerm) + 's'
         except ValueError:
             continue
-        valueByUnit[unit] = value
-    return relativedelta(**valueByUnit)
+        if value:  # Ignore zero
+            valueByUnit[unit] = value
+    if valueByUnit:
+        return relativedelta(**valueByUnit)
 
 
 def _get_unit(term):
