@@ -39,27 +39,24 @@ _UNIT_LETTERS = 'y', 'l', 'w', 'd', 'h', 'm', 's'
 class WhenIO(object):
     'Convenience class for formatting and parsing friendly timestamps'
 
-    def __init__(self, timezone=None, today=None):
-        """
-        Set user-specific parameters.
+    def __init__(
+            self, timezone=None, today=None, default_time=datetime.time()):
+        """Set user-specific parameters.
         timezone    Set timezone as returned by jstz, e.g US/Eastern.
         today       Set reference date to parse special terms, e.g. Today.
         """
-        self._tz = get_localzone() if not timezone else pytz.timezone(timezone)
         utcnow = datetime.datetime.utcnow()
+        self._tz = get_localzone() if not timezone else pytz.timezone(timezone)
         self._today = today.date() if today else self._to_local(utcnow).date()
         self._tomorrow = self._today + datetime.timedelta(days=1)
         self._yesterday = self._today + datetime.timedelta(days=-1)
+        self._default_time = default_time
 
-    def format(self, timestamps,
-               dateTemplate=_DATE_TEMPLATES[0],
-               withLeadingZero=False,
-               omitStartDate=False,
-               forceDate=False,
-               fromUTC=True,
-               separator=' '):
-        """
-        Format timestamps into strings.
+    def format(
+            self, timestamps, dateTemplate=_DATE_TEMPLATES[0],
+            withLeadingZero=False, omitStartDate=False, forceDate=False,
+            fromUTC=True, separator=' '):
+        """Format timestamps into strings.
         timestamps            A timestamp or list of timestamps
         dateTemplate          Template when date is more than a week away
         withLeadingZero=True  Prepend leading zero
@@ -87,12 +84,10 @@ class WhenIO(object):
             previousDate = timestamp.date()
         return separator.join(strings)
 
-    def format_date(self, date,
-                    dateTemplate=_DATE_TEMPLATES[0],
-                    withLeadingZero=False,
-                    forceDate=False):
-        """
-        Format date into string.
+    def format_date(
+            self, date, dateTemplate=_DATE_TEMPLATES[0],
+            withLeadingZero=False, forceDate=False):
+        """Format date into string.
         dateTemplate          Template when date is more than a week away
         withLeadingZero=True  Prepend leading zero
         forceDate=True        Show date even when it is less than a week away
@@ -128,8 +123,7 @@ class WhenIO(object):
         return time.strftime(timeTemplate).lower()
 
     def parse(self, text, toUTC=True):
-        """
-        Parse timestamps from strings.
+        """Parse timestamps from strings.
         text         A string of timestamps
         toUTC=True   Convert timestamps to UTC after parsing
         toUTC=False  Parse timestamps without conversion
@@ -147,7 +141,8 @@ class WhenIO(object):
             if time is not None:
                 oldTimestamp = timestamps[-1] if timestamps else None
                 newTimestamp = self._combine_date_time(oldTimestamp, time)
-                if isinstance(oldTimestamp, datetime.datetime) or not timestamps:
+                if isinstance(
+                        oldTimestamp, datetime.datetime) or not timestamps:
                     timestamps.append(newTimestamp)
                 else:
                     timestamps[-1] = newTimestamp
@@ -213,22 +208,23 @@ class WhenIO(object):
             return datetime.datetime.combine(self._today, time)
         # If only the date is present,
         if date:
-            return datetime.datetime.combine(date, datetime.time(0, 0))
+            return datetime.datetime.combine(date, self._default_time)
 
     def _from_local(self, timestamp):
         'Convert local time into UTC'
         if timestamp:
-            return self._tz.localize(timestamp).astimezone(pytz.utc).replace(tzinfo=None)
+            return self._tz.localize(
+                timestamp).astimezone(pytz.utc).replace(tzinfo=None)
 
     def _to_local(self, timestamp):
         'Convert UTC into local time '
         if timestamp:
-            return pytz.utc.localize(timestamp).astimezone(self._tz).replace(tzinfo=None)
+            return pytz.utc.localize(
+                timestamp).astimezone(self._tz).replace(tzinfo=None)
 
 
 def format_duration(rdelta, precision=0, style='words', rounding='ceiling'):
-    """
-    Format a relativedelta object rounded to the given precision.
+    """Format a relativedelta object rounded to the given precision.
 
     Set style='abbreviations' to abbreviate units.
     Set style='letters' to abbreviate to one letter.
@@ -265,7 +261,7 @@ def format_duration(rdelta, precision=0, style='words', rounding='ceiling'):
             break
     # Format terms with appropriate plurality
     return ' '.join('%i%s' % (
-        value, 
+        value,
         unit + 's' if len(unit) > 1 and abs(value) != 1 else unit,
     ) for value, unit in packs)
 
