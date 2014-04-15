@@ -31,9 +31,10 @@ _UNIT_LIMITS = [
     ('months', 12),
     ('years', None),
 ]
-_UNIT_WORDS = 'year', 'month', 'week', 'day', 'hour', 'minute', 'second'
-_UNIT_ABBREVIATIONS = 'yr', 'mo', 'wk', 'dy', 'hr', 'min', 'sec'
-_UNIT_LETTERS = 'y', 'l', 'w', 'd', 'h', 'm', 's'
+_UNIT_WORDS = ('year', 'month', 'week', 'day', 'hour', 'minute', 'second',
+               'microsecond')
+_UNIT_ABBREVIATIONS = 'yr', 'mo', 'wk', 'dy', 'hr', 'min', 'sec', 'usec'
+_UNIT_LETTERS = 'y', 'l', 'w', 'd', 'h', 'm', 's', 'us'
 
 
 class WhenIO(object):

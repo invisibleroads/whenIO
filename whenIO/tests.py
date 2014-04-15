@@ -99,6 +99,14 @@ class Test(unittest.TestCase):
                         datetime.datetime.combine(date, datetime.time(0, 0)))
 
     def test_duration(self):
+        self.assertEqual('100 microseconds', whenIO.format_duration(
+            whenIO.parse_duration('100 microseconds')))
+        self.assertEqual('1 second', whenIO.format_duration(
+            whenIO.parse_duration('1000000 microseconds')))
+        self.assertEqual('999999 microseconds', whenIO.format_duration(
+            whenIO.parse_duration('999999 usecs')))
+        self.assertEqual('5 microseconds', whenIO.format_duration(
+            whenIO.parse_duration('5 us')))
         self.assertEqual('1 week', whenIO.format_duration(
             whenIO.parse_duration('7 days')))
         self.assertEqual('2 years', whenIO.format_duration(
