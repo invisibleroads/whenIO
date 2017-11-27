@@ -31,10 +31,10 @@ _UNIT_LIMITS = [
     ('months', 12),
     ('years', None),
 ]
-_UNIT_WORDS = ('year', 'month', 'week', 'day', 'hour', 'minute', 'second',
-               'microsecond')
+_UNIT_WORDS = (
+    'year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'microsecond')
 _UNIT_ABBREVIATIONS = 'yr', 'mo', 'wk', 'dy', 'hr', 'min', 'sec', 'usec'
-_UNIT_LETTERS = 'y', 'l', 'w', 'd', 'h', 'm', 's', 'us'
+_UNIT_LETTERS = 'y', 'l', 'w', 'd', 'h', 'm', 's', 'u'
 
 
 class WhenIO(object):
@@ -244,7 +244,7 @@ def format_duration(rdelta, precision=0, style='words', rounding='ceiling'):
     get_adjustment = {
         'ceiling': lambda value, limit: 1 if value else 0,
         'floor': lambda value, limit: 0,
-        'round': lambda value, limit: 1 if value > limit / 2 else 0,
+        'round': lambda value, limit: 1 if value > limit // 2 else 0,
     }[rounding]
     padding = '' if style == 'letters' else ' '
     precisionIndex = 0
@@ -271,11 +271,13 @@ def _serialize_relativedelta(rdelta):
     'Use larger units when possible and introduce new units'
     valueByUnit = {}
     for index, (unit, limit) in enumerate(_UNIT_LIMITS):
-        value = valueByUnit.get(unit, 0) + getattr(rdelta, unit, 0)
+        value = valueByUnit.get(unit, 0)
+        if unit != 'weeks':
+            value += getattr(rdelta, unit, 0)
         if limit and value >= limit:
             nextUnit = _UNIT_LIMITS[index + 1][0]
             nextValue = valueByUnit.get(nextUnit, 0)
-            valueByUnit[nextUnit] = nextValue + value / limit
+            valueByUnit[nextUnit] = nextValue + value // limit
             value = value % limit
         valueByUnit[unit] = value
     return valueByUnit

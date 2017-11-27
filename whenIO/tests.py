@@ -106,7 +106,7 @@ class Test(unittest.TestCase):
         self.assertEqual('999999 microseconds', whenIO.format_duration(
             whenIO.parse_duration('999999 usecs')))
         self.assertEqual('5 microseconds', whenIO.format_duration(
-            whenIO.parse_duration('5 us')))
+            whenIO.parse_duration('5 u')))
         self.assertEqual('1 week', whenIO.format_duration(
             whenIO.parse_duration('7 days')))
         self.assertEqual('2 years', whenIO.format_duration(
@@ -114,12 +114,10 @@ class Test(unittest.TestCase):
             precision=1))
         self.assertEqual('3l 2w', whenIO.format_duration(
             whenIO.parse_duration('3mo 9dy 23hr'),
-            precision=2,
-            style='letters'))
+            precision=2, style='letters'))
         self.assertEqual('2 wks', whenIO.format_duration(
             whenIO.parse_duration('200h'),
-            precision=1,
-            style='abbreviations'))
+            precision=1, style='abbreviations'))
         # Test edge cases
         whenIO.parse_duration('xxx hours')
 
