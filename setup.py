@@ -1,19 +1,17 @@
-'Setup script for whenIO'
 import os
-
 from setuptools import setup, find_packages
 
 
-here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.rst')).read()
-CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
+HERE = os.path.abspath(os.path.dirname(__file__))
+README = open(os.path.join(HERE, 'README.rst')).read()
+CHANGES = open(os.path.join(HERE, 'CHANGES.rst')).read()
 
 
 setup(
     name='whenIO',
-    version='1.5.1',
+    version='1.5.2',
     description='Methods for formatting and parsing friendly timestamps',
-    long_description=README + '\n\n' +  CHANGES,
+    long_description=README + '\n\n' + CHANGES,
     license='MIT',
     classifiers=[
         'Intended Audience :: Developers',
