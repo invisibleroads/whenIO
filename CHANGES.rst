@@ -2,6 +2,7 @@
 ---
 - Added unit abbreviations and letters to parse_duration(), format_duration()
 - Added control over rounding behavior to format_duration()
+- Added microseconds to format_duration() thanks to `Javier Ruere <https://github.com/jruere>`_
 
 1.4
 ---
